@@ -94,7 +94,7 @@ class TodoApp {
 
       li.innerHTML = `
         <div class="task-content">
-          <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+          <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
           <span class="task-text">${this.escapeHtml(task.text)}</span>
         </div>
         <div class="task-actions">
@@ -103,8 +103,21 @@ class TodoApp {
         </div>
       `;
 
+      const checkbox = li.querySelector('.task-checkbox');
+      checkbox.addEventListener('change', () => this.toggleTaskCompleted(task.id));
+
       taskList.appendChild(li);
     });
+  }
+
+  // タスクの完了状態を切り替える
+  toggleTaskCompleted(taskId) {
+    const task = this.tasks.find(t => t.id === taskId);
+    if (task) {
+      task.completed = !task.completed;
+      this.saveTasks();
+      this.renderTasks();
+    }
   }
 
   // 空状態の表示/非表示を更新する
