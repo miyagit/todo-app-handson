@@ -94,17 +94,119 @@ class TodoApp {
 
       li.innerHTML = `
         <div class="task-content">
-          <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} disabled>
+          <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
           <span class="task-text">${this.escapeHtml(task.text)}</span>
         </div>
         <div class="task-actions">
-          <button class="btn-edit" disabled>編集</button>
-          <button class="btn-delete" disabled>削除</button>
+          <button class="btn-edit">編集</button>
+          <button class="btn-delete">削除</button>
         </div>
       `;
 
+      // チェックボックスイベント
+      const checkbox = li.querySelector('.task-checkbox');
+      checkbox.addEventListener('change', () => this.toggleTask(task.id));
+
+      // 編集ボタンイベント
+      const editBtn = li.querySelector('.btn-edit');
+      editBtn.addEventListener('click', () => this.editTask(li, task));
+
+      // 削除ボタンイベント
+      const deleteBtn = li.querySelector('.btn-delete');
+      deleteBtn.addEventListener('click', () => this.deleteTask(task.id));
+
       taskList.appendChild(li);
     });
+  }
+
+  // タスク完了状態を切り替える
+  toggleTask(taskId) {
+    const task = this.tasks.find(t => t.id === taskId);
+    if (task) {
+      task.completed = !task.completed;
+      this.saveTasks();
+      this.renderTasks();
+    }
+  }
+
+  // タスクを編集する
+  editTask(li, task) {
+    const taskContent = li.querySelector('.task-content');
+    const taskText = li.querySelector('.task-text');
+
+    // 編集中フラグをチェック
+    if (li.classList.contains('is-editing')) {
+      return;
+    }
+
+    // 編集フォームを作成
+    const editContainer = document.createElement('div');
+    editContainer.className = 'edit-form';
+    editContainer.innerHTML = `
+      <input type="text" class="edit-input" value="${this.escapeHtml(task.text)}">
+      <div class="edit-actions">
+        <button class="btn-save">保存</button>
+        <button class="btn-cancel">キャンセル</button>
+      </div>
+    `;
+
+    // 編集フォームに置き換え
+    li.classList.add('is-editing');
+    taskContent.replaceWith(editContainer);
+
+    // 入力フィールドにフォーカス
+    const editInput = editContainer.querySelector('.edit-input');
+    editInput.focus();
+    editInput.select();
+
+    // 保存ボタン
+    const saveBtn = editContainer.querySelector('.btn-save');
+    saveBtn.addEventListener('click', () => this.saveEdit(task, editInput.value, li));
+
+    // キャンセルボタン
+    const cancelBtn = editContainer.querySelector('.btn-cancel');
+    cancelBtn.addEventListener('click', () => this.cancelEdit(li, task));
+
+    // Enterキーで保存、Escapeキーでキャンセル
+    editInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        this.saveEdit(task, editInput.value, li);
+      }
+    });
+    editInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.cancelEdit(li, task);
+      }
+    });
+  }
+
+  // 編集を保存する
+  saveEdit(task, newText, li) {
+    const trimmedText = newText.trim();
+
+    if (!trimmedText) {
+      alert('タスクを入力してください');
+      return;
+    }
+
+    task.text = trimmedText;
+    this.saveTasks();
+    this.renderTasks();
+  }
+
+  // 編集をキャンセルする
+  cancelEdit(li, task) {
+    this.renderTasks();
+  }
+
+  // タスクを削除する
+  deleteTask(taskId) {
+    if (confirm('このタスクを削除しますか？')) {
+      this.tasks = this.tasks.filter(t => t.id !== taskId);
+      this.saveTasks();
+      this.renderTasks();
+      this.updateEmptyState();
+    }
   }
 
   // 空状態の表示/非表示を更新する
